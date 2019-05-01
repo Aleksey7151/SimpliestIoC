@@ -1,0 +1,533 @@
+
+    public interface IFoo
+    {
+        string FooMethod();
+
+        string FooString { get; set; }
+    }
+
+    public class Foo : IFoo
+    {
+        public Foo()
+        {
+            FooString = "Foo String";
+        }
+
+        public string FooMethod()
+        {
+            return "Foo Method Invoked";
+        }
+
+        public string FooString { get; set; }
+
+        public bool Equals(Foo f)
+        {
+            return FooString == f.FooString;
+        }
+    }
+
+    public interface IBar
+    {
+        int BarMethod();
+
+        int BarValue { get; set; }
+    }
+
+    public class Bar : IBar
+    {
+        public Bar()
+        {
+            BarValue = 999;
+        }
+        public int BarMethod()
+        {
+            return 9;
+        }
+
+        public int BarValue { get; set; }
+
+        public bool Equals(Bar b)
+        {
+            return BarValue == b.BarValue;
+        }
+    }
+
+    public interface ISimple
+    {
+        IBar Bar { get; }
+
+        IFoo Foo { get; }
+
+        ICalc Calc { get; }
+    }
+
+    public class Complicated : ISimple
+    {
+        #region Ctors.
+        public Complicated(ICalc calc)
+        {
+            Calc = calc;
+        }
+        public Complicated(IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public Complicated(IFoo foo)
+        {
+            Foo = foo;
+        }
+
+        public Complicated(IBar bar, IFoo foo)
+        {
+            Bar = bar;
+            Foo = foo;
+        }
+        public Complicated(ICalc calc, IFoo foo)
+        {
+            Calc = calc;
+            Foo = foo;
+        }
+        public Complicated(ICalc calc, IBar bar)
+        {
+            Calc = calc;
+            Bar = bar;
+        }
+        public Complicated(ICalc calc, IBar bar, IFoo foo)
+        {
+            Calc = calc;
+            Bar = bar;
+            Foo = foo;
+        }
+
+#endregion //Ctors.
+
+        public ICalc Calc { get; }
+
+        public IBar Bar { get; }
+
+        public IFoo Foo { get; }
+    }
+
+    public class VeryComplicated
+    {
+        #region Ctors
+
+        public VeryComplicated(ICalc calc)
+        {
+            Calc = calc;
+        }
+
+        public VeryComplicated(IBar bar)
+        {
+            Bar = bar;
+        }
+
+        public VeryComplicated( IFoo foo)
+        {
+            Foo = foo;
+        }
+        
+        public VeryComplicated(ICalc calc, IBar bar, IFoo foo)
+        {
+            Calc = calc;
+            Bar = bar;
+            Foo = foo;
+        }
+
+        public VeryComplicated(ICalc calc, IBar bar, IFoo foo, string name, int age, string password)
+        {
+            Calc = calc;
+            Bar = bar;
+            Foo = foo;
+            Name = name;
+            Age = age;
+            Password = password;
+        }
+
+        #endregion //Ctors
+        
+        public ICalc Calc { get; set; }
+
+        public IBar Bar { get; set; }
+
+        public IFoo Foo { get; set; }
+
+        public string Name { get; set; }
+
+        public int Age { get; set; }
+
+        public string Password { get; set; }
+    }
+
+
+#region Service Instantiations
+        [Test]
+        public void GetServiceInstance()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<Service>();
+            var inst = ioc.GetInstance<Service>();
+            Assert.IsNotNull(inst);
+            Assert.IsTrue(inst.Value == 575656);
+        }
+
+        [Test]
+        public void GetServiceInstanceLikeSingleObject()
+        {
+            var ioc = GetIoc();
+            ioc.Register<Service>(LifeCycle.SinglePerContainer);
+            var inst = ioc.GetInstance<Service>();
+            Assert.IsNotNull(inst);
+            inst.Value = 838383333;
+            var ints2 = ioc.GetInstance<Service>();
+            Assert.AreSame(ints2,inst);
+        }
+
+        [Test]
+        public void GetServiceInstanceLikeTransientObject()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<Service>(LifeCycle.Transient);
+            var inst = ioc.GetInstance<Service>();
+
+            Assert.IsNotNull(inst);
+
+            inst.Value = 838383333;
+
+            var ints2 = ioc.GetInstance<Service>();
+
+            Assert.AreNotSame(ints2, inst);
+        }
+
+        [Test]
+        public void GetImplementationOfRegisteredService()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<ICalc, CalcSimple>();
+            var inst = ioc.GetInstance<ICalc>();
+            Assert.IsNotNull(inst);
+            Assert.IsInstanceOf<CalcSimple>(inst);
+        }
+
+		[Test]
+		public void ThreeImplementationsOfOneService()
+        {
+            var di = GetDiContainer();
+
+            di.Register<ICalc, CalcSimple>("Simple");
+            di.Register<ICalc, CalcEngineer>("Engineer");
+            di.Register<ICalc, CalcProgrammer>("Programmer");
+
+            var simple = di.GetInstance<ICalc>("Simple");
+            var engineer = di.GetInstance<ICalc>("Engineer");
+            var programmer = di.GetInstance<ICalc>("Programmer");
+
+            Assert.NotNull(simple);
+            Assert.NotNull(engineer);
+            Assert.NotNull(programmer);
+
+            Assert.IsInstanceOf<CalcSimple>(simple);
+            Assert.IsInstanceOf<CalcEngineer>(engineer);
+            Assert.IsInstanceOf<CalcProgrammer>(programmer);
+        }
+
+        [Test]
+        public void GetImplementationOfRegisteredServiceAfterTwoRegistrationsOfImplementator()
+        {
+            var ioc = GetIoc();
+            ioc.Register<ICalc, CalcSimple>();
+            ioc.Register<ICalc, CalcEngineer>();
+
+            var inst = ioc.GetInstance<ICalc>();
+            Assert.IsNotNull(inst);
+            Assert.IsInstanceOf<CalcEngineer>(inst);
+        }
+
+        [Test]
+        public void GetService_WithKnownDependency()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<IBar, Bar>();
+            ioc.Register<Complicated>();
+            var instance = ioc.GetInstance<Complicated>();
+            Assert.NotNull(instance);
+            Assert.NotNull(instance.Bar);
+            Assert.Null(instance.Calc);
+            Assert.Null(instance.Foo);
+            Assert.IsInstanceOf(typeof(IBar), instance.Bar);
+        }
+
+        [Test]
+        public void GetService_WithKnownDependencyAsSingleObject()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<IBar, Bar>();
+            ioc.Register<IFoo, Foo>(LifeCycle.SinglePerContainer);
+            ioc.Register<Complicated>();
+
+            var instance1 = ioc.GetInstance<Complicated>();
+
+            Assert.NotNull(instance1);
+            Assert.NotNull(instance1.Bar);
+            Assert.Null(instance1.Calc);
+            Assert.NotNull(instance1.Foo);
+            Assert.IsInstanceOf(typeof(IBar), instance1.Bar);
+            Assert.IsInstanceOf(typeof(IFoo), instance1.Foo);
+
+            var instance2 = ioc.GetInstance<Complicated>();
+
+            Assert.NotNull(instance2);
+            Assert.NotNull(instance2.Bar);
+            Assert.Null(instance2.Calc);
+            Assert.NotNull(instance2.Foo);
+
+            Assert.AreNotSame(instance2, instance1);
+            Assert.AreNotSame(instance1.Bar, instance2.Bar);
+            Assert.AreSame(instance1.Foo, instance2.Foo);
+        }
+        
+        [Test]
+        public void GetImplementation_WithKnownDependencyAsSingleObject()
+        {
+            var ioc = new DiContainer();
+            ioc.Register<IBar, Bar>();
+            ioc.Register<IFoo, Foo>(LifeCycle.SinglePerContainer);
+            ioc.Register<ICalc, CalcEngineer>(LifeCycle.SinglePerContainer);
+            ioc.Register<ISimple, Complicated>();
+
+            var instance1 = ioc.GetInstance<ISimple>();
+
+            Assert.NotNull(instance1);
+            Assert.NotNull(instance1.Bar);
+            Assert.NotNull(instance1.Calc);
+            Assert.NotNull(instance1.Foo);
+            Assert.IsInstanceOf(typeof(IBar), instance1.Bar);
+            Assert.IsInstanceOf(typeof(IFoo), instance1.Foo);
+            Assert.IsInstanceOf(typeof(ICalc), instance1.Calc);
+
+            var instance2 = ioc.GetInstance<ISimple>();
+
+            Assert.NotNull(instance2);
+            Assert.NotNull(instance2.Bar);
+            Assert.NotNull(instance2.Calc);
+            Assert.NotNull(instance2.Foo);
+
+            Assert.AreNotSame(instance2, instance1);
+            Assert.AreNotSame(instance1.Bar, instance2.Bar);
+            Assert.AreSame(instance1.Foo, instance2.Foo);
+            Assert.AreSame(instance1.Calc, instance2.Calc);
+        }
+
+        [Test]
+        public void GetImplementation_WithOneFactoryParam()
+        {
+            var str = "This is Foo string";
+            var ioc = new DiContainer();
+            ioc.Register<IFoo, ISimple>((factory, foo) => new Complicated(foo));
+
+            var fooArg = new Foo {FooString = str};
+
+            var simple = ioc.GetInstance<IFoo, ISimple>(fooArg);
+            
+            Assert.NotNull(simple);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.IsTrue(simple.Foo.FooString == str);
+        }
+
+        [Test]
+        public void GetImplementation_WithOneFactoryParam_And_OtherFromContainer()
+        {
+            var str = "This is Foo string";
+            var ioc = new DiContainer();
+            ioc.Register<IBar,Bar>();
+            ioc.Register<ICalc,CalcSimple>();
+            ioc.Register<IFoo, ISimple>((factory, foo) => new Complicated(factory.GetInstance<ICalc>(),factory.GetInstance<IBar>(),foo));
+
+            var fooArg = new Foo { FooString = str };
+
+            var simple = ioc.GetInstance<IFoo, ISimple>(fooArg);
+
+            Assert.NotNull(simple);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.IsTrue(simple.Foo.FooString == str);
+            Assert.NotNull(simple.Bar);
+            Assert.NotNull(simple.Calc);
+        }
+
+        [Test]
+        public void GetImplementation_WithTwoFactoryParams()
+        {
+            var fooStr = "Some Foo String";
+            var ioc = new DiContainer();
+            ioc.Register<IFoo, IBar, ISimple>((factory, foo, bar) => new Complicated(bar, foo));
+            
+            var fooArg = new Foo {FooString = fooStr};
+            var barArg = new Bar {BarValue = 123455};
+
+            var simple = ioc.GetInstance<IFoo, IBar, ISimple>(fooArg, barArg);
+
+            Assert.NotNull(simple);
+            Assert.NotNull(simple.Foo);
+            Assert.NotNull(simple.Bar);
+            Assert.Null(simple.Calc);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.AreSame(barArg, simple.Bar);
+            Assert.IsTrue(simple.Foo.FooString == fooStr);
+            Assert.IsTrue(simple.Bar.BarValue == 123455);
+        }
+
+        [Test]
+        public void GetImplementation_WithTwoFactoryParams_And_OtherFromContainer()
+        {
+            var fooStr = "Some Foo String";
+            var ioc = new DiContainer();
+            ioc.Register<ICalc, CalcSimple>();
+            ioc.Register<IFoo, IBar, ISimple>((factory, foo, bar) => new Complicated(factory.GetInstance<ICalc>(), bar, foo));
+
+            var fooArg = new Foo { FooString = fooStr };
+            var barArg = new Bar { BarValue = 123455 };
+
+            var simple = ioc.GetInstance<IFoo, IBar, ISimple>(fooArg, barArg);
+
+            Assert.NotNull(simple);
+            Assert.NotNull(simple.Foo);
+            Assert.NotNull(simple.Bar);
+            Assert.NotNull(simple.Calc);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.AreSame(barArg, simple.Bar);
+            Assert.IsTrue(simple.Foo.FooString == fooStr);
+            Assert.IsTrue(simple.Bar.BarValue == 123455);
+        }
+
+        [Test]
+        public void GetInstance_WithThreeFactoryParams()
+        {
+            var fooStr = "Some Foo String";
+
+            var ioc = new DiContainer();
+            ioc.Register<IBar, ICalc, IFoo, ISimple>((factory, bar, calc, foo) => new Complicated(calc, bar, foo));
+
+            var fooArg = new Foo { FooString = fooStr };
+            var barArg = new Bar { BarValue = 123455 };
+            var calcArg = new CalcSimple();
+
+            var simple = ioc.GetInstance<IBar, ICalc, IFoo, ISimple>(barArg, calcArg, fooArg);
+
+            Assert.NotNull(simple);
+            Assert.NotNull(simple.Foo);
+            Assert.NotNull(simple.Bar);
+            Assert.NotNull(simple.Calc);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.AreSame(barArg, simple.Bar);
+            Assert.AreSame(calcArg, simple.Calc);
+            Assert.IsTrue(simple.Foo.FooString == fooStr);
+            Assert.IsTrue(simple.Bar.BarValue == 123455);
+        }
+
+        [Test]
+        public void GetInstance_WithSixFactoryParams()
+        {
+            var fooStr = "Some Foo String";
+            var ioc = new DiContainer();
+            ioc.Register<ICalc, IBar, IFoo, string, int, string, VeryComplicated>((factory, calc, bar, foo, name, age, pass) => new VeryComplicated(calc, bar, foo, name, age, pass));
+
+            var fooArg = new Foo { FooString = fooStr };
+            var barArg = new Bar { BarValue = 123455 };
+            var calcArg = new CalcSimple();
+
+            var simple = ioc.GetInstance<ICalc, IBar, IFoo, string, int, string, VeryComplicated>(calcArg, barArg, fooArg, "NameIs", 36363, "PASSSSSSSWWWWWW");
+
+            Assert.NotNull(simple);
+            Assert.NotNull(simple.Foo);
+            Assert.NotNull(simple.Bar);
+            Assert.NotNull(simple.Calc);
+            Assert.AreSame(fooArg, simple.Foo);
+            Assert.AreSame(barArg, simple.Bar);
+            Assert.AreSame(calcArg, simple.Calc);
+            Assert.IsTrue(simple.Foo.FooString == fooStr);
+            Assert.IsTrue(simple.Bar.BarValue == 123455);
+            Assert.IsTrue(simple.Name == "NameIs");
+            Assert.IsTrue(simple.Age == 36363);
+            Assert.IsTrue(simple.Password == "PASSSSSSSWWWWWW");
+        }
+
+		[Test]
+        public void InjectOnePropertyUsingValue()
+        {
+            var ioc = new DiContainer();
+
+            ioc.Register<IBar, Bar>();
+
+            ioc.Register<VeryComplicated>();
+            // Here we register for property "Name" injection value "Registered Injection"
+            ioc.RegisterProperty<VeryComplicated, string>(complicated => complicated.Name, "Registered Injection");
+
+            var complicatedInst = ioc.GetInstance<VeryComplicated>();
+
+            Assert.NotNull(complicatedInst);
+            Assert.NotNull(complicatedInst.Bar);
+            Assert.IsTrue(complicatedInst.Name == "Registered Injection");
+        }
+
+        [Test]
+        public void InjectTwoPropertiesUsingValue()
+        {
+            var ioc = new DiContainer();
+
+            ioc.Register<IBar, Bar>();
+
+            ioc.Register<VeryComplicated>();
+            // Here we register for property "Name" injection value "Registered Injection"
+            ioc.RegisterProperty<VeryComplicated, string>(complicated => complicated.Name, "Registered Injection");
+            ioc.RegisterProperty<VeryComplicated, int>(complicated => complicated.Age, 144444);
+            var complicatedInst = ioc.GetInstance<VeryComplicated>();
+
+            Assert.NotNull(complicatedInst);
+            Assert.NotNull(complicatedInst.Bar);
+            Assert.IsTrue(complicatedInst.Name == "Registered Injection");
+            Assert.IsTrue(complicatedInst.Age == 144444);
+        }
+
+        [Test]
+        public void InjectOnePropertyUsingFactory()
+        {
+            var ioc = new DiContainer();
+
+            ioc.Register<IBar, Bar>();
+
+            ioc.Register<VeryComplicated>();
+            // Here we register for property "Name" injection value "Registered Injection"
+            ioc.RegisterProperty<VeryComplicated, IFoo>(complicated => complicated.Foo, i => new Foo {FooString = "Some string"});
+
+            var complicatedInst = ioc.GetInstance<VeryComplicated>();
+
+            Assert.NotNull(complicatedInst);
+            Assert.NotNull(complicatedInst.Bar);
+            Assert.NotNull(complicatedInst.Foo);
+            Assert.IsTrue(complicatedInst.Foo.FooString == "Some string");
+        }
+
+        [Test]
+        public void InjectTwoPropertiesUsingFactoryMethod()
+        {
+            var ioc = new DiContainer();
+
+            ioc.Register<IBar, Bar>();
+            ioc.Register<ICalc, CalcSimple>();
+
+            ioc.Register<VeryComplicated>();
+            // Here we register for property "Name" injection value "Registered Injection"
+            ioc.RegisterProperty<VeryComplicated, IFoo>(complicated => complicated.Foo, i => new Foo { FooString = "Some string" });
+            ioc.RegisterProperty<VeryComplicated, IBar>(complicated => complicated.Bar, i => i.GetInstance<IBar>());
+
+            var complicatedInst = ioc.GetInstance<VeryComplicated>();
+
+            Assert.NotNull(complicatedInst);
+            Assert.NotNull(complicatedInst.Bar);
+            Assert.NotNull(complicatedInst.Foo);
+            Assert.NotNull(complicatedInst.Calc);
+            Assert.IsTrue(complicatedInst.Foo.FooString == "Some string");
+        }
+
+        #endregion //Service Instantiations

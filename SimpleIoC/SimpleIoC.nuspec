@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>Simpliest.IoC</id>
+    <version>1.0.2</version>
+    <title>Simple dependency injection container.</title>
+    <authors>Alexei Safonov</authors>
+    <projectUrl>https://github.com/Aleksey7151/SimpliestIoC</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>Simple and lightweight dependency injection container compatible with Xamarin.</summary>
+    <description>
+Simple and lightweight dependency injection container.
+
+Supported Xamarin platforms:
+-Android
+-iOS
+-Windows Phone
+-Windows
+    </description>
+    <tags>dependency injection inversion control ioc di container xamarin ios droid wp wp8 wp81</tags>
+  </metadata>
+  <files>
+    <file src="bin/Release/SimpleIoC.dll" target="lib/portable-net45+netcore45+wpa81+wp8" />
+    <file src="bin/Release/SimpleIoC.xml" target="lib/portable-net45+netcore45+wpa81+wp8" />
+    <file src="DI_Container_Samples.cs.txt" target="content"/>
+  </files>
+</package>
